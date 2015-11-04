@@ -8,8 +8,8 @@ public class GameState : MonoBehaviour {
     private MeshRenderer Mesh1;
     private MeshRenderer Mesh2;
 
-    public enum State { Waiting2, Waiting1, Ready, Player1, Player2, Fight}
-    public State state;
+    public enum State { Waiting2, Waiting1, Ready, Player1, Player2, Fight, End}
+    public static State state;
 
     // Use this for initialization
     void Start() {
