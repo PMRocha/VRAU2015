@@ -45,9 +45,12 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\Atack.cs" />
-     <Compile Include="Assets\GameState.cs" />
-     <Compile Include="Assets\PlayerLookAt.cs" />
+     <Compile Include="Assets\Scripts\Atack.cs" />
+     <Compile Include="Assets\Scripts\GameState.cs" />
+     <Compile Include="Assets\Scripts\HealthBar.cs" />
+     <Compile Include="Assets\Scripts\HealthController.cs" />
+     <Compile Include="Assets\Scripts\PlayerLookAt.cs" />
+     <Compile Include="Assets\Scripts\Reload.cs" />
      <Compile Include="Assets\Vuforia\Scripts\BackgroundPlaneBehaviour.cs" />
      <Compile Include="Assets\Vuforia\Scripts\CloudRecoBehaviour.cs" />
      <Compile Include="Assets\Vuforia\Scripts\CylinderTargetBehaviour.cs" />
