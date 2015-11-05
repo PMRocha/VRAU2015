@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 
 public class GameState : MonoBehaviour {
@@ -11,6 +12,7 @@ public class GameState : MonoBehaviour {
     private GameObject Attack2;
     private GameObject Shield1;
     private GameObject Shield2;
+    
     private MeshRenderer MeshPlayer1;
     private MeshRenderer MeshPlayer2;
     private MeshRenderer MeshReload1;
@@ -19,44 +21,60 @@ public class GameState : MonoBehaviour {
     private MeshRenderer MeshAttack2;
     private MeshRenderer MeshShield1;
     private MeshRenderer MeshShield2;
+    
+    private Robot robot1;
+    private Robot robot2;
 
-    private Robot[] Robots;
+    private float firstTime;
 
-    public enum State { Waiting2, Waiting1, Ready, Player1, Player2, Fight, End}
+    public enum State { Waiting2, Waiting1, Ready, Player1, Player2, Fight, FirstWait, Wait, End}
     public static State state;
     public string[] action;
+    public Text StateText;
 
     public void ResolveFight() {
+        /*
+        Debug.Log(action[0]);
+        Debug.Log(action[1]);
+        Debug.Log(robot1.fire());
+        Debug.Log(robot2.fire());
+        */
         switch (action[0])
         {
             case "attack":
-                if (Robots[1].fire() == 1)
+                if (robot1.fire() )
                 {
                     if (action[1] != "shield")
                     {
-                        Robots[1].takeDamage();
+                        robot2.takeDamage();
                     }
                 }
                 break;
             case "reload":
-                Robots[0].reload();
+                robot1.reload();
                 break;
         }
         switch (action[1])
         {
             case "attack":
-                if (Robots[1].fire()==1) { 
+                if (robot2.fire()) { 
                     if (action[0] != "shield")
                     {
-                        Robots[0].takeDamage();
+                        robot1.takeDamage();
                     }
                 }
                 break;
             case "reload":
-                Robots[1].reload();
+                robot2.reload();
                 break;
         }
-        if (Robots[0].dead || Robots[1].dead)
+        /*
+        Debug.Log(action[0]);
+        Debug.Log(action[1]);
+        Debug.Log(robot1.fire());
+        Debug.Log(robot2.fire());
+        */
+        if (robot1.dead || robot2.dead)
             state = State.End;
     }
 
@@ -65,10 +83,8 @@ public class GameState : MonoBehaviour {
 
         action = new string[2];
 
-        Robots = new Robot[2];
-
-        Robots[0] = new Robot(1);
-        Robots[1] = new Robot(2);
+        robot1 = new Robot(1);
+        robot2 = new Robot(2);
 
         Player1 = GameObject.FindGameObjectWithTag("Player1");
         Player2 = GameObject.FindGameObjectWithTag("Player2");
@@ -81,7 +97,7 @@ public class GameState : MonoBehaviour {
 
         Shield1 = GameObject.FindGameObjectWithTag("S1");
         Shield2 = GameObject.FindGameObjectWithTag("S2");
-
+        
         MeshPlayer1 = Player1.GetComponent<MeshRenderer>();
         MeshPlayer2 = Player2.GetComponent<MeshRenderer>();
 
@@ -92,21 +108,20 @@ public class GameState : MonoBehaviour {
         MeshAttack2 = Attack2.GetComponent<MeshRenderer>();
 
         MeshShield1 = Shield1.GetComponent<MeshRenderer>();
-        MeshShield2 = Shield2.GetComponent<MeshRenderer>();     
+        MeshShield2 = Shield2.GetComponent<MeshRenderer>();
+
     }
-	
-	// Update is called once per frame
 
-	void Update () {
+    // Update is called once per frame
 
-        if (MeshPlayer1.isVisible && MeshPlayer2.isVisible)
-        {
-            state = State.Ready;
+    void Update () {
+        if(state == State.FirstWait){
+            firstTime = Time.time;
+            state = State.Wait;
         }
-
-        else if (MeshPlayer1.isVisible || MeshPlayer2.isVisible)
-        {
-            state = State.Waiting1;
+        else if (state == State.Wait){
+            if (Time.time - firstTime > 5)
+                state = State.Ready;        
         }
         else if (state == State.Ready && (MeshAttack1.isVisible || MeshReload1.isVisible || MeshShield1.isVisible))
         {
@@ -180,16 +195,37 @@ public class GameState : MonoBehaviour {
                 action[1] = "shield";
             }
         }
+        else if (state == State.Player1)
+        {
+
+        }
+        else if (state == State.Player2)
+        {
+
+        }
         else if (state == State.Fight)
         {
+            state = State.FirstWait;
             ResolveFight();
         }
-        else
+
+        else if (!MeshPlayer2.isVisible && !MeshPlayer2.isVisible)
         {
             state = State.Waiting2;
         }
 
-   }
+        else if (MeshPlayer1.isVisible ^ MeshPlayer2.isVisible)
+        {
+            state = State.Waiting1;
+        }
+        else
+        {
+            state = State.Ready;
+        }
+        
+        StateText.text = state.ToString();
+    }
+
 }
 
 public class Robot
@@ -207,7 +243,7 @@ public class Robot
     public Robot(int id) {
         this.id = id;
         health = 5;
-        bullets = 5;
+        bullets = 0;
         dead = false;
 
         Bullets = new GameObject[3];
@@ -268,12 +304,12 @@ public class Robot
             dead=true;
     }
 
-    public int fire() {
+    public bool fire() {
         if (bullets > 0) {
             bullets--;
             Bullets[bullets].SetActive(false);
-            return 1;
+            return true;
         }
-        return 0; 
+        return false; 
     }
 }

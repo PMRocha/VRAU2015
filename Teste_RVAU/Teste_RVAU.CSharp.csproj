@@ -123,7 +123,6 @@
     <None Include="Assets\Standard Assets\Toon Shading\Sources\Shaders\Toony-BasicOutline.shader" />
     <None Include="Assets\Standard Assets\Toon Shading\Sources\Shaders\Toony-Lighted.shader" />
     <None Include="Assets\Standard Assets\Toon Shading\Sources\Shaders\Toony-LightedOutline.shader" />
-    <None Include="Assets\StreamingAssets\QCAR\PKM_DB.xml" />
     <None Include="Assets\StreamingAssets\QCAR\ROBOT_DB.xml" />
     <None Include="Assets\Vuforia\Editor\Scripts\Qualcomm.Vuforia.UnityExtensions.Editor.XML" />
     <None Include="Assets\Vuforia\Editor\WebcamProfiles\profiles.xml" />
