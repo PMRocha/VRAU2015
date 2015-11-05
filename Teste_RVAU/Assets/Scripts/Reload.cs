@@ -8,7 +8,7 @@ public class Reload : MonoBehaviour {
     private static GameObject[] bullets2;
 
     // Use this for initialization
-    void Start () {
+    /*void Start () {
         numBullets1 = 0;
         numBullets2 = 0;
         bullets1 = GameObject.FindGameObjectsWithTag("Bullet1");
@@ -42,5 +42,5 @@ public class Reload : MonoBehaviour {
 
 
 
-	}
+	}*/
 }

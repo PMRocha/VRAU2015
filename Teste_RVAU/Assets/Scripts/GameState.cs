@@ -30,8 +30,12 @@ public class GameState : MonoBehaviour {
         switch (action[0])
         {
             case "attack":
-                if (action[1] != "shield") {
-                    Robots[1].takeDamage();
+                if (Robots[1].fire() == 1)
+                {
+                    if (action[1] != "shield")
+                    {
+                        Robots[1].takeDamage();
+                    }
                 }
                 break;
             case "reload":
@@ -41,9 +45,11 @@ public class GameState : MonoBehaviour {
         switch (action[1])
         {
             case "attack":
-                if (action[0] != "shield")
-                {
-                    Robots[0].takeDamage();
+                if (Robots[1].fire()==1) { 
+                    if (action[0] != "shield")
+                    {
+                        Robots[0].takeDamage();
+                    }
                 }
                 break;
             case "reload":
@@ -67,7 +73,7 @@ public class GameState : MonoBehaviour {
         Player1 = GameObject.FindGameObjectWithTag("Player1");
         Player2 = GameObject.FindGameObjectWithTag("Player2");
 
-        /*Reload1 = GameObject.FindGameObjectWithTag("R1");
+        Reload1 = GameObject.FindGameObjectWithTag("R1");
         Reload2 = GameObject.FindGameObjectWithTag("R2");
 
         Attack1 = GameObject.FindGameObjectWithTag("A1");
@@ -86,14 +92,14 @@ public class GameState : MonoBehaviour {
         MeshAttack2 = Attack2.GetComponent<MeshRenderer>();
 
         MeshShield1 = Shield1.GetComponent<MeshRenderer>();
-        MeshShield2 = Shield2.GetComponent<MeshRenderer>();    */    
+        MeshShield2 = Shield2.GetComponent<MeshRenderer>();     
     }
 	
 	// Update is called once per frame
 
 	void Update () {
 
-       /* if (MeshPlayer1.isVisible && MeshPlayer2.isVisible)
+        if (MeshPlayer1.isVisible && MeshPlayer2.isVisible)
         {
             state = State.Ready;
         }
@@ -181,7 +187,7 @@ public class GameState : MonoBehaviour {
         else
         {
             state = State.Waiting2;
-        }*/
+        }
 
    }
 }
@@ -193,21 +199,71 @@ public class Robot
     public int bullets;
     public bool dead;
 
+    private GameObject[] Bullets;
+    private GameObject[] HealthBar;
+
+    private MeshRenderer[] BulletsMeshes;
+
     public Robot(int id) {
         this.id = id;
         health = 5;
         bullets = 5;
         dead = false;
+
+        Bullets = new GameObject[3];
+        BulletsMeshes = new MeshRenderer[3];
+        HealthBar = new GameObject[5];
+
+        if (id == 1)
+        {
+            Bullets[0] = GameObject.FindGameObjectWithTag("Bullet11");
+            Bullets[1] = GameObject.FindGameObjectWithTag("Bullet12");
+            Bullets[2] = GameObject.FindGameObjectWithTag("Bullet13");
+
+            BulletsMeshes[0] = Bullets[0].GetComponent<MeshRenderer>();
+            BulletsMeshes[1] = Bullets[1].GetComponent<MeshRenderer>();
+            BulletsMeshes[2] = Bullets[2].GetComponent<MeshRenderer>();
+
+            HealthBar[0] = GameObject.FindGameObjectWithTag("Health11");
+            HealthBar[1] = GameObject.FindGameObjectWithTag("Health12");
+            HealthBar[2] = GameObject.FindGameObjectWithTag("Health13");
+            HealthBar[3] = GameObject.FindGameObjectWithTag("Health14");
+            HealthBar[4] = GameObject.FindGameObjectWithTag("Health15");
+        }
+        else
+        {
+            Bullets[0] = GameObject.FindGameObjectWithTag("Bullet21");
+            Bullets[1] = GameObject.FindGameObjectWithTag("Bullet22");
+            Bullets[2] = GameObject.FindGameObjectWithTag("Bullet23");
+
+            BulletsMeshes[0] = Bullets[0].GetComponent<MeshRenderer>();
+            BulletsMeshes[1] = Bullets[1].GetComponent<MeshRenderer>();
+            BulletsMeshes[2] = Bullets[2].GetComponent<MeshRenderer>();
+
+            HealthBar[0] = GameObject.FindGameObjectWithTag("Health21");
+            HealthBar[1] = GameObject.FindGameObjectWithTag("Health22");
+            HealthBar[2] = GameObject.FindGameObjectWithTag("Health23");
+            HealthBar[3] = GameObject.FindGameObjectWithTag("Health24");
+            HealthBar[4] = GameObject.FindGameObjectWithTag("Health25");
+        }
+
+        Bullets[0].SetActive(false);
+        Bullets[1].SetActive(false);
+        Bullets[2].SetActive(false);
     }
 
     public void reload() {
         if (bullets < 3)
+        {
             bullets++;
+            Bullets[bullets - 1].SetActive(true);
+        }
     }
 
     public void takeDamage()
     {
         health--;
+        HealthBar[health].SetActive(false);
         if (health == 0)
             dead=true;
     }
@@ -215,6 +271,7 @@ public class Robot
     public int fire() {
         if (bullets > 0) {
             bullets--;
+            Bullets[bullets].SetActive(false);
             return 1;
         }
         return 0; 
