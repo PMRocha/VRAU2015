@@ -27,7 +27,7 @@ public class GameState : MonoBehaviour {
 
     private float firstTime;
 
-    public enum State { Waiting2, Waiting1, Ready, Player1, Player2, Fight, FirstWait, Wait, End}
+    public enum State { Waiting2, Waiting1, Ready, Player1, Player2, Fight, Wait, End}
     public static State state;
     public string[] action;
     public Text StateText;
@@ -115,11 +115,7 @@ public class GameState : MonoBehaviour {
     // Update is called once per frame
 
     void Update () {
-        if(state == State.FirstWait){
-            firstTime = Time.time;
-            state = State.Wait;
-        }
-        else if (state == State.Wait){
+        if (state == State.Wait){
             if (Time.time - firstTime > 5)
                 state = State.Ready;        
         }
@@ -205,8 +201,9 @@ public class GameState : MonoBehaviour {
         }
         else if (state == State.Fight)
         {
-            state = State.FirstWait;
+            state = State.Wait;
             ResolveFight();
+            firstTime = Time.time;
         }
 
         else if (!MeshPlayer2.isVisible && !MeshPlayer2.isVisible)
