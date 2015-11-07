@@ -75,9 +75,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Atack.cs" />
+    <Compile Include="Assets\Scripts\BulletMovement.cs" />
     <Compile Include="Assets\Scripts\GameState.cs" />
-    <Compile Include="Assets\Scripts\HealthBar.cs" />
-    <Compile Include="Assets\Scripts\HealthController.cs" />
     <Compile Include="Assets\Scripts\PlayerLookAt.cs" />
     <Compile Include="Assets\Scripts\Reload.cs" />
     <Compile Include="Assets\Vuforia\Scripts\BackgroundPlaneBehaviour.cs" />

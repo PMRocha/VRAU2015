@@ -12,7 +12,14 @@ public class GameState : MonoBehaviour {
     private GameObject Attack2;
     private GameObject Shield1;
     private GameObject Shield2;
-    
+    private GameObject ShieldObject1;
+    private GameObject ShieldObject2;
+    private GameObject ReloadObject1;
+    private GameObject ReloadObject2;
+
+    public GameObject Bullet1;
+    public GameObject Bullet2;
+
     private MeshRenderer MeshPlayer1;
     private MeshRenderer MeshPlayer2;
     private MeshRenderer MeshReload1;
@@ -21,65 +28,72 @@ public class GameState : MonoBehaviour {
     private MeshRenderer MeshAttack2;
     private MeshRenderer MeshShield1;
     private MeshRenderer MeshShield2;
-    
+
     private Robot robot1;
     private Robot robot2;
 
     private float firstTime;
 
-    public enum State { Waiting2, Waiting1, Ready, Player1, Player2, Fight, Wait, End}
+    public enum State { Waiting2, Waiting1, Ready, Player1, Player2, Fight, Wait, End }
     public static State state;
     public string[] action;
     public Text StateText;
 
     public void ResolveFight() {
-        /*
-        Debug.Log(action[0]);
-        Debug.Log(action[1]);
-        Debug.Log(robot1.fire());
-        Debug.Log(robot2.fire());
-        */
+
         switch (action[0])
         {
             case "attack":
-                if (robot1.fire() )
+                if (robot1.fire())
                 {
                     if (action[1] != "shield")
                     {
                         robot2.takeDamage();
                     }
+                    Rigidbody clone;
+                    clone = Instantiate(Bullet1, transform.position, transform.rotation) as Rigidbody;
+                    clone.velocity = transform.TransformDirection(Vector3.forward * 10);
                 }
                 break;
             case "reload":
-                robot1.reload();
+                if (robot1.reload())
+                    ReloadObject1.SetActive(true);
+                break;
+            case "shield":
+                ShieldObject1.SetActive(true);
                 break;
         }
         switch (action[1])
         {
             case "attack":
-                if (robot2.fire()) { 
+                if (robot2.fire()) {
                     if (action[0] != "shield")
                     {
                         robot1.takeDamage();
                     }
+                    Rigidbody clone;
+                    clone = Instantiate(Bullet2, transform.position, transform.rotation) as Rigidbody;
+                    clone.velocity = transform.TransformDirection(Vector3.forward * 10);
                 }
                 break;
             case "reload":
-                robot2.reload();
+                if (robot2.reload())
+                    ReloadObject2.SetActive(true);
+                break;
+            case "shield":
+                ShieldObject2.SetActive(true);
                 break;
         }
-        /*
-        Debug.Log(action[0]);
-        Debug.Log(action[1]);
-        Debug.Log(robot1.fire());
-        Debug.Log(robot2.fire());
-        */
+
         if (robot1.dead || robot2.dead)
             state = State.End;
     }
 
     // Use this for initialization
     void Start() {
+
+        Bullet1 = GameObject.FindGameObjectWithTag("Bullet1");
+        Bullet2 = GameObject.FindGameObjectWithTag("Bullet2");
 
         action = new string[2];
 
@@ -97,7 +111,13 @@ public class GameState : MonoBehaviour {
 
         Shield1 = GameObject.FindGameObjectWithTag("S1");
         Shield2 = GameObject.FindGameObjectWithTag("S2");
-        
+
+        ShieldObject1 = GameObject.FindGameObjectWithTag("Shield1");
+        ShieldObject2 = GameObject.FindGameObjectWithTag("Shield2");
+
+        ReloadObject1 = GameObject.FindGameObjectWithTag("Reload1");
+        ReloadObject2 = GameObject.FindGameObjectWithTag("Reload2");
+
         MeshPlayer1 = Player1.GetComponent<MeshRenderer>();
         MeshPlayer2 = Player2.GetComponent<MeshRenderer>();
 
@@ -110,14 +130,43 @@ public class GameState : MonoBehaviour {
         MeshShield1 = Shield1.GetComponent<MeshRenderer>();
         MeshShield2 = Shield2.GetComponent<MeshRenderer>();
 
+        ShieldObject1.SetActive(false);
+        ShieldObject2.SetActive(false);
+
+        ReloadObject1.SetActive(false);
+        ReloadObject2.SetActive(false);
     }
 
     // Update is called once per frame
 
-    void Update () {
-        if (state == State.Wait){
+    void Update() {
+        if (state == State.Wait) {
+
             if (Time.time - firstTime > 5)
-                state = State.Ready;        
+            {
+                state = State.Ready;
+
+                if (action[0] == "reload")
+                    ReloadObject1.SetActive(false);
+                else if (action[0] == "attack")
+                {
+                    Bullet1.transform.position = Player1.transform.position;
+                    Bullet1.SetActive(false);
+                }
+                else if (action[0] == "shield")
+                    ShieldObject1.SetActive(false);
+
+                if (action[1] == "reload")
+                    ReloadObject2.SetActive(false);
+                else if (action[1] == "attack")
+                {
+                    Bullet2.transform.position = Player2.transform.position;
+                    Bullet2.SetActive(false);
+                }
+                else if (action[1] == "shield")
+                    ShieldObject2.SetActive(false);
+            }
+     
         }
         else if (state == State.Ready && (MeshAttack1.isVisible || MeshReload1.isVisible || MeshShield1.isVisible))
         {
@@ -205,8 +254,7 @@ public class GameState : MonoBehaviour {
             ResolveFight();
             firstTime = Time.time;
         }
-
-        else if (!MeshPlayer2.isVisible && !MeshPlayer2.isVisible)
+        else if (!MeshPlayer2.isVisible && !MeshPlayer1.isVisible)
         {
             state = State.Waiting2;
         }
@@ -285,12 +333,14 @@ public class Robot
         Bullets[2].SetActive(false);
     }
 
-    public void reload() {
+    public bool reload() {
         if (bullets < 3)
         {
             bullets++;
             Bullets[bullets - 1].SetActive(true);
+            return true;
         }
+        return false;
     }
 
     public void takeDamage()
