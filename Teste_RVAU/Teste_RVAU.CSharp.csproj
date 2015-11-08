@@ -75,8 +75,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Atack.cs" />
-    <Compile Include="Assets\Scripts\BulletMovement.cs" />
     <Compile Include="Assets\Scripts\GameState.cs" />
+    <Compile Include="Assets\Scripts\GameStateWithAIEasy.cs" />
+    <Compile Include="Assets\Scripts\GameStateWithAINormal.cs" />
+    <Compile Include="Assets\Scripts\MenuMouseHandler.cs" />
     <Compile Include="Assets\Scripts\PlayerLookAt.cs" />
     <Compile Include="Assets\Scripts\Reload.cs" />
     <Compile Include="Assets\Vuforia\Scripts\BackgroundPlaneBehaviour.cs" />

@@ -17,9 +17,6 @@ public class GameState : MonoBehaviour {
     private GameObject ReloadObject1;
     private GameObject ReloadObject2;
 
-    public GameObject Bullet1;
-    public GameObject Bullet2;
-
     private MeshRenderer MeshPlayer1;
     private MeshRenderer MeshPlayer2;
     private MeshRenderer MeshReload1;
@@ -28,31 +25,27 @@ public class GameState : MonoBehaviour {
     private MeshRenderer MeshAttack2;
     private MeshRenderer MeshShield1;
     private MeshRenderer MeshShield2;
-
+    
     private Robot robot1;
     private Robot robot2;
 
     private float firstTime;
 
-    public enum State { Waiting2, Waiting1, Ready, Player1, Player2, Fight, Wait, End }
+    public enum State { Waiting2, Waiting1, Ready, Player1, Player2, Fight, Wait, End}
     public static State state;
     public string[] action;
     public Text StateText;
 
     public void ResolveFight() {
-
         switch (action[0])
         {
             case "attack":
-                if (robot1.fire())
+                if (robot1.fire() )
                 {
                     if (action[1] != "shield")
                     {
                         robot2.takeDamage();
                     }
-                    Rigidbody clone;
-                    clone = Instantiate(Bullet1, transform.position, transform.rotation) as Rigidbody;
-                    clone.velocity = transform.TransformDirection(Vector3.forward * 10);
                 }
                 break;
             case "reload":
@@ -66,14 +59,11 @@ public class GameState : MonoBehaviour {
         switch (action[1])
         {
             case "attack":
-                if (robot2.fire()) {
+                if (robot2.fire()) { 
                     if (action[0] != "shield")
                     {
                         robot1.takeDamage();
                     }
-                    Rigidbody clone;
-                    clone = Instantiate(Bullet2, transform.position, transform.rotation) as Rigidbody;
-                    clone.velocity = transform.TransformDirection(Vector3.forward * 10);
                 }
                 break;
             case "reload":
@@ -84,16 +74,12 @@ public class GameState : MonoBehaviour {
                 ShieldObject2.SetActive(true);
                 break;
         }
-
         if (robot1.dead || robot2.dead)
             state = State.End;
     }
 
     // Use this for initialization
     void Start() {
-
-        Bullet1 = GameObject.FindGameObjectWithTag("Bullet1");
-        Bullet2 = GameObject.FindGameObjectWithTag("Bullet2");
 
         action = new string[2];
 
@@ -130,19 +116,32 @@ public class GameState : MonoBehaviour {
         MeshShield1 = Shield1.GetComponent<MeshRenderer>();
         MeshShield2 = Shield2.GetComponent<MeshRenderer>();
 
-        ShieldObject1.SetActive(false);
-        ShieldObject2.SetActive(false);
-
         ReloadObject1.SetActive(false);
         ReloadObject2.SetActive(false);
+        ShieldObject1.SetActive(false);
+        ShieldObject2.SetActive(false);
     }
 
     // Update is called once per frame
 
-    void Update() {
-        if (state == State.Wait) {
+    void Update () {
 
-            if (Time.time - firstTime > 5)
+        if (state == State.End) {
+            if (robot1.dead && robot2.dead)
+            {
+                StateText.text = "Draw";
+            }
+            else if (robot1.dead)
+            {
+                StateText.text = "Player 2 Wins";
+            }
+            else if (robot2.dead)
+            {
+                StateText.text = "Player 1 Wins";
+            }
+        }
+        else if (state == State.Wait){
+            if (Time.time - firstTime > 1)
             {
                 state = State.Ready;
 
@@ -150,8 +149,7 @@ public class GameState : MonoBehaviour {
                     ReloadObject1.SetActive(false);
                 else if (action[0] == "attack")
                 {
-                    Bullet1.transform.position = Player1.transform.position;
-                    Bullet1.SetActive(false);
+                    
                 }
                 else if (action[0] == "shield")
                     ShieldObject1.SetActive(false);
@@ -160,16 +158,17 @@ public class GameState : MonoBehaviour {
                     ReloadObject2.SetActive(false);
                 else if (action[1] == "attack")
                 {
-                    Bullet2.transform.position = Player2.transform.position;
-                    Bullet2.SetActive(false);
+                    
                 }
                 else if (action[1] == "shield")
                     ShieldObject2.SetActive(false);
             }
-     
+                        
         }
         else if (state == State.Ready && (MeshAttack1.isVisible || MeshReload1.isVisible || MeshShield1.isVisible))
         {
+            StateText.text = "Player 1 Selected Their Action";
+
             state = State.Player1;
 
             if (MeshAttack1.isVisible)
@@ -190,6 +189,8 @@ public class GameState : MonoBehaviour {
         else if (state == State.Ready && (MeshAttack2.isVisible || MeshReload2.isVisible || MeshShield2.isVisible))
         {
             state = State.Player2;
+
+            StateText.text = "Player 2 Selected Their Action";
 
             if (MeshAttack2.isVisible)
             {
@@ -225,6 +226,7 @@ public class GameState : MonoBehaviour {
         }
         else if (state == State.Player1 && (MeshAttack2.isVisible || MeshReload2.isVisible || MeshShield2.isVisible))
         {
+            StateText.text = "Fighting";
             state = State.Fight;
 
             if (MeshAttack2.isVisible)
@@ -250,25 +252,29 @@ public class GameState : MonoBehaviour {
         }
         else if (state == State.Fight)
         {
+            StateText.text = "Fighting";
             state = State.Wait;
             ResolveFight();
             firstTime = Time.time;
         }
+
         else if (!MeshPlayer2.isVisible && !MeshPlayer1.isVisible)
         {
             state = State.Waiting2;
+            StateText.text = "Waiting for 2 Players";
         }
 
         else if (MeshPlayer1.isVisible ^ MeshPlayer2.isVisible)
         {
             state = State.Waiting1;
+            StateText.text = "Waiting for 1 Player";
         }
         else
         {
             state = State.Ready;
+            StateText.text = "Select Players Actions";
         }
         
-        StateText.text = state.ToString();
     }
 
 }
