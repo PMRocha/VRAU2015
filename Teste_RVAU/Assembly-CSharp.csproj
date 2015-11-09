@@ -46,9 +46,11 @@
   </ItemGroup>
   <ItemGroup>
      <Compile Include="Assets\Scripts\Atack.cs" />
+     <Compile Include="Assets\Scripts\ButtonBehaviour.cs" />
      <Compile Include="Assets\Scripts\GameState.cs" />
-     <Compile Include="Assets\Scripts\HealthBar.cs" />
-     <Compile Include="Assets\Scripts\HealthController.cs" />
+     <Compile Include="Assets\Scripts\GameStateWithAIEasy.cs" />
+     <Compile Include="Assets\Scripts\GameStateWithAINormal.cs" />
+     <Compile Include="Assets\Scripts\MenuMouseHandler.cs" />
      <Compile Include="Assets\Scripts\PlayerLookAt.cs" />
      <Compile Include="Assets\Scripts\Reload.cs" />
      <Compile Include="Assets\Vuforia\Scripts\BackgroundPlaneBehaviour.cs" />
@@ -90,6 +92,7 @@
      <None Include="Assets\readme_SDK.txt" />
      <None Include="Assets\Standard Assets\Toon Shading\Sources\Shaders\Toony-Basic.shader" />
      <None Include="Assets\license_3rdpartynotice.txt" />
+     <None Include="Assets\StreamingAssets\QCAR\Robot_Battle.xml" />
      <None Include="Assets\link.xml" />
      <None Include="Assets\Vuforia\Shaders\VertexLitWithZ.shader" />
      <None Include="Assets\Plugins\Android\AndroidManifest.xml" />
@@ -100,8 +103,8 @@
      <None Include="Assets\Vuforia\Shaders\DepthMask.shader" />
      <None Include="Assets\Standard Assets\Toon Shading\Sources\Shaders\Toony-LightedOutline.shader" />
      <None Include="Assets\Standard Assets\Toon Shading\Sources\Shaders\Toony-Lighted.shader" />
-     <None Include="Assets\Vuforia\Shaders\BrightTexture.shader" />
      <None Include="Assets\StreamingAssets\QCAR\ROBOT_DB.xml" />
+     <None Include="Assets\Vuforia\Shaders\BrightTexture.shader" />
      <None Include="Assets\Vuforia\Shaders\Text3D.shader" />
  <Reference Include="Assembly-UnityScript-firstpass">
  <HintPath>C:/Users/Asus/Documents/Unity_Projects/Teste_RVAU/Library/ScriptAssemblies/Assembly-UnityScript-firstpass.dll</HintPath>

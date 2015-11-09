@@ -4,6 +4,9 @@ using System.Collections;
 
 public class GameState : MonoBehaviour {
 
+    private float speed = 250;
+    private float waitingTime = 2.5f;
+
     private GameObject Player1;
     private GameObject Player2;
     private GameObject Reload1;
@@ -16,6 +19,8 @@ public class GameState : MonoBehaviour {
     private GameObject ShieldObject2;
     private GameObject ReloadObject1;
     private GameObject ReloadObject2;
+    private GameObject BulletObject1;
+    private GameObject BulletObject2;
 
     private MeshRenderer MeshPlayer1;
     private MeshRenderer MeshPlayer2;
@@ -25,7 +30,7 @@ public class GameState : MonoBehaviour {
     private MeshRenderer MeshAttack2;
     private MeshRenderer MeshShield1;
     private MeshRenderer MeshShield2;
-    
+
     private Robot robot1;
     private Robot robot2;
 
@@ -42,6 +47,7 @@ public class GameState : MonoBehaviour {
             case "attack":
                 if (robot1.fire() )
                 {
+                    BulletObject1.SetActive(true);
                     if (action[1] != "shield")
                     {
                         robot2.takeDamage();
@@ -59,7 +65,8 @@ public class GameState : MonoBehaviour {
         switch (action[1])
         {
             case "attack":
-                if (robot2.fire()) { 
+                if (robot2.fire()) {
+                    BulletObject2.SetActive(true);
                     if (action[0] != "shield")
                     {
                         robot1.takeDamage();
@@ -104,6 +111,9 @@ public class GameState : MonoBehaviour {
         ReloadObject1 = GameObject.FindGameObjectWithTag("Reload1");
         ReloadObject2 = GameObject.FindGameObjectWithTag("Reload2");
 
+        BulletObject1 = GameObject.FindGameObjectWithTag("Bullet1");
+        BulletObject2 = GameObject.FindGameObjectWithTag("Bullet2");
+
         MeshPlayer1 = Player1.GetComponent<MeshRenderer>();
         MeshPlayer2 = Player2.GetComponent<MeshRenderer>();
 
@@ -120,13 +130,27 @@ public class GameState : MonoBehaviour {
         ReloadObject2.SetActive(false);
         ShieldObject1.SetActive(false);
         ShieldObject2.SetActive(false);
+        BulletObject1.SetActive(false);
+        BulletObject2.SetActive(false);
     }
 
     // Update is called once per frame
 
     void Update () {
+        if (BulletObject1.activeSelf)
+        {
+            float step = speed * Time.deltaTime;
+            BulletObject1.transform.position = Vector3.MoveTowards(BulletObject1.transform.position, Player2.transform.position, step);
+        }
 
-        if (state == State.End) {
+        if (BulletObject2.activeSelf)
+        {
+            float step = speed * Time.deltaTime;
+            BulletObject2.transform.position = Vector3.MoveTowards(BulletObject2.transform.position, Player1.transform.position, step);
+        }
+
+        if (state == State.End)
+        {
             if (robot1.dead && robot2.dead)
             {
                 StateText.text = "Draw";
@@ -139,9 +163,15 @@ public class GameState : MonoBehaviour {
             {
                 StateText.text = "Player 1 Wins";
             }
+
+            if (Time.time - firstTime > waitingTime)
+            {
+                Application.LoadLevel(0);
+            }
         }
-        else if (state == State.Wait){
-            if (Time.time - firstTime > 1)
+        else if (state == State.Wait)
+        {
+            if (Time.time - firstTime > waitingTime)
             {
                 state = State.Ready;
 
@@ -149,7 +179,8 @@ public class GameState : MonoBehaviour {
                     ReloadObject1.SetActive(false);
                 else if (action[0] == "attack")
                 {
-                    
+                    BulletObject1.SetActive(false);
+                    BulletObject1.transform.position = Player1.transform.position;
                 }
                 else if (action[0] == "shield")
                     ShieldObject1.SetActive(false);
@@ -158,12 +189,13 @@ public class GameState : MonoBehaviour {
                     ReloadObject2.SetActive(false);
                 else if (action[1] == "attack")
                 {
-                    
+                    BulletObject2.SetActive(false);
+                    BulletObject2.transform.position = Player2.transform.position;
                 }
                 else if (action[1] == "shield")
                     ShieldObject2.SetActive(false);
             }
-                        
+
         }
         else if (state == State.Ready && (MeshAttack1.isVisible || MeshReload1.isVisible || MeshShield1.isVisible))
         {
