@@ -11,20 +11,20 @@ using namespace std;
 bool compareContourAreas(std::vector<cv::Point> contour1, std::vector<cv::Point> contour2) {
 	double i = fabs(contourArea(cv::Mat(contour1)));
 	double j = fabs(contourArea(cv::Mat(contour2)));
-	return (i < j);
+	return (i > j);
 }
 
 
 int main( int argc, char** argv )
 {
-    if( argc != 2)
+    /*if( argc != 2)
     {
      cout <<" Usage: display_image ImageToLoadAndDisplay" << endl;
      return -1;
-    }
+    }*/
 
     Mat image;
-    image = imread(argv[1], CV_LOAD_IMAGE_COLOR);   // Read the file
+    image = imread("C:\\Users\\Pedrp\\Documents\\Visual Studio 2015\\Projects\\RVAU Segundo\\x64\\Release\\cards.png", CV_LOAD_IMAGE_COLOR);   // Read the file
 
     if(! image.data )                              // Check for invalid input
     {
@@ -52,30 +52,57 @@ int main( int argc, char** argv )
 	std::sort(vecPoint.begin(), vecPoint.end(), compareContourAreas);
 	
 	vector<Point> r;
-	vector<Point> approximate;
+	vector<Vec2f> approximate;
+	Point2f inputQuad[4];
+	Point2f outputQuad[4];
+
+	outputQuad[1] = Point2f(0, 0);
+	outputQuad[0] = Point2f(485, 0);
+	outputQuad[3] = Point2f(485, 681);
+	outputQuad[2] = Point2f(0, 681);
+	Mat card1, card2, card3, card4;
 	for (size_t i = 0; i < 4; i++)
 	{
 		vector<Point> card = vecPoint[i];
 		double peri = arcLength(card, true);
-		approxPolyDP(card, approximate, 0.02*peri, true);
-		cout << "487152\n";
+		approxPolyDP(card, approximate, 0.01*peri, true);
 		RotatedRect rect = minAreaRect(card);
-		cout << "487153\n";
-		boxPoints(rect,r);
-		cout << "487154\n";
+
+		inputQuad[0] = approximate[0];
+		inputQuad[1] = approximate[1];
+		inputQuad[2] = approximate[2];
+		inputQuad[3] = approximate[3];
+
+		Mat final = getPerspectiveTransform(inputQuad, outputQuad);
+		Mat output;
+		switch (i) {
+		case 0:
+			warpPerspective(image, card1, final, card1.size());
+			break;
+		case 1:
+			warpPerspective(image, card2, final, card1.size());
+			break;
+		case 2:
+			warpPerspective(image, card3, final, card1.size());
+			break;
+		case 3:
+			warpPerspective(image, card4, final, card1.size());
+			break;
+		}
+		
 	}
 
-	vector<Vec4i> h;
-	h.push_back(Vec4i(0,0));
-	h.push_back(Vec4i(486, 0));
-	h.push_back(Vec4i(486, 682));
-	h.push_back(Vec4i(0, 682));
-
 	cout << "final step\n";
-	Mat final = getPerspectiveTransform(approximate,h);
+	
 
-    namedWindow( "Display window", WINDOW_AUTOSIZE );// Create a window for display.
-    imshow( "Display window", final);                   // Show our image inside it.
+    namedWindow( "Display window1", WINDOW_AUTOSIZE );// Create a window for display.
+    imshow( "Display window1", card1);
+	namedWindow("Display window2", WINDOW_AUTOSIZE);// Create a window for display.
+	imshow("Display window2", card2);
+	namedWindow("Display window3",WINDOW_AUTOSIZE);// Create a window for display.
+	imshow("Display window3", card3);
+	namedWindow("Display window4", WINDOW_AUTOSIZE);// Create a window for display.
+	imshow("Display window4", card4);
 
     waitKey(0);                                          // Wait for a keystroke in the window
     return 0;
