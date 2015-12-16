@@ -57,9 +57,9 @@ int main( int argc, char** argv )
 	Point2f outputQuad[4];
 
 	outputQuad[1] = Point2f(0, 0);
-	outputQuad[0] = Point2f(485, 0);
-	outputQuad[3] = Point2f(485, 681);
-	outputQuad[2] = Point2f(0, 681);
+	outputQuad[0] = Point2f(700, 0);
+	outputQuad[3] = Point2f(700, 760);
+	outputQuad[2] = Point2f(0, 760);
 	Mat card1, card2, card3, card4;
 	for (size_t i = 0; i < 4; i++)
 	{
