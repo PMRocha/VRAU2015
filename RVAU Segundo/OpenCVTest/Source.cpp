@@ -18,6 +18,10 @@ bool sortByX(pair<Mat,int> vec1, pair<Mat, int> vec2) {
 	return (vec1.second < vec2.second);
 }
 
+double dist(Point2f p1, Point2f p2) {
+	return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2));
+}
+
 Mat preprocess(Mat img) {
 	cvtColor(img, img, CV_BGR2GRAY);
 	GaussianBlur(img, img, Size(1, 1), 1000);
@@ -95,7 +99,7 @@ int main( int argc, char** argv )
     }*/
 
     Mat image;
-    image = imread("C:\\Users\\Asus\\Documents\\VRAU2015\\RVAU Segundo\\x64\\Release\\teste.png", CV_LOAD_IMAGE_COLOR);   // Read the file
+    image = imread("C:\\Users\\Asus\\Documents\\VRAU2015\\RVAU Segundo\\x64\\Release\\cards.png", CV_LOAD_IMAGE_COLOR);   // Read the file
 
     if(! image.data )                              // Check for invalid input
     {
@@ -127,17 +131,25 @@ int main( int argc, char** argv )
 		double peri = arcLength(card, true);
 		approxPolyDP(card, approximate, 0.01*peri, true);
 		RotatedRect rect = minAreaRect(card);
+		Point2f points[4];
+		rect.points(points);
 
-		inputQuad[0] = approximate[0];
-		inputQuad[1] = approximate[1];
-		inputQuad[2] = approximate[2];
-		inputQuad[3] = approximate[3];
-
-
-		outputQuad[0] = Point2f(449, 0);
-		outputQuad[1] = Point2f(0, 0);
-		outputQuad[2] = Point2f(0, 449);
-		outputQuad[3] = Point2f(449, 449);
+		if (dist(approximate[0], approximate[1]) < dist(approximate[1], approximate[2])) {
+			inputQuad[0] = approximate[0];
+			inputQuad[1] = approximate[1];
+			inputQuad[2] = approximate[2];
+			inputQuad[3] = approximate[3];
+		}
+		else {
+			inputQuad[0] = approximate[1];
+			inputQuad[1] = approximate[2];
+			inputQuad[2] = approximate[3];
+			inputQuad[3] = approximate[0];
+		}
+			outputQuad[0] = Point2f(449, 0);
+			outputQuad[1] = Point2f(0, 0);
+			outputQuad[2] = Point2f(0, 449);
+			outputQuad[3] = Point2f(449, 449);
 
 		Mat final = getPerspectiveTransform(inputQuad, outputQuad);
 		Mat output;
@@ -146,79 +158,103 @@ int main( int argc, char** argv )
 	//-----------------------------------------------------------------//
 
 	//-------------------------------Get Symbols----------------------------------//
-	
+	vector<pair<Mat, int>> symbols;
 
-	thresh = preprocess(cards[1]);
-	findContours(thresh, vecPoint, vecInfo, CV_RETR_TREE, CHAIN_APPROX_SIMPLE);
-	std::sort(vecPoint.begin(), vecPoint.end(), compareContourAreas);
-	vector<pair<Mat,int>> symbols;
-
-	for (int i = 0; i < 10; ++i) {
+	for (int index = 0; index < 4 ; ++index) {
+		thresh = preprocess(cards[index]);
+		findContours(thresh, vecPoint, vecInfo, CV_RETR_TREE, CHAIN_APPROX_SIMPLE);
+		std::sort(vecPoint.begin(), vecPoint.end(), compareContourAreas);
 		
-		vector<Point> symbol = vecPoint[i];
-		double peri = arcLength(symbol, true);
+		cout << vecPoint.size() << endl;
+		for (int i = 0; i < 15 && i < vecPoint.size(); ++i) {
+			vector<Point> symbol = vecPoint[i];
+			double peri = arcLength(symbol, true);
+			approxPolyDP(symbol, approximate, 0.01*peri, true);
+			RotatedRect rect = minAreaRect(symbol);
+			rectangle(cards[index], rect.boundingRect(), Scalar(0, 0, 255));
 
-		approxPolyDP(symbol, approximate, 0.01*peri, true);
-		RotatedRect rect = minAreaRect(symbol);
-		Mat r;
-		boxPoints(rect, r);
-	
-		rectangle(cards[1], rect.boundingRect(), Scalar(0, 0, 255));
+			cout << cards[index].size() << endl;
+			cout << rect.boundingRect() << endl;
+			Mat cropped;
+			if (rect.boundingRect().x + rect.boundingRect().width < cards[index].size().width &&
+				rect.boundingRect().y + rect.boundingRect().height < cards[index].size().height &&
+				rect.boundingRect().x >= 0 && rect.boundingRect().y >= 0) {
+				cropped = cards[index](rect.boundingRect()).clone();
+			}
+			else {
+				int x = rect.boundingRect().x, 
+					y = rect.boundingRect().y, 
+					width = rect.boundingRect().width, 
+					height = rect.boundingRect().height;
+				if (rect.boundingRect().x + rect.boundingRect().width > cards[index].size().width)
+					width = cards[index].size().width - rect.boundingRect().x;
+				if (rect.boundingRect().y + rect.boundingRect().height > cards[index].size().height)
+					height = cards[index].size().height - rect.boundingRect().y;
+				if (rect.boundingRect().x < 0)
+					x = 0;
+				if (rect.boundingRect().y < 0)
+					y = 0;
 
+				cropped = cards[index](Rect(x,y,width,height));
+			}
+			symbols.push_back(pair<Mat, int>(cropped, rect.center.x));
+		}
 		
-		Mat croppedFaceImage = cards[1](rect.boundingRect()).clone();
-		symbols.push_back(pair<Mat, int>(croppedFaceImage, rect.center.x));
-	}	
+	}
+
 	std::sort(symbols.begin(), symbols.end(), sortByX);
 	//---------------------------------------------------------------------------------//
 
-	vector<Mat> allCards = readAllCards(); //getDataSet
+	vector<Mat> allCards = readCards(); //getDataSet
 
 	//Compare symbols with Dataset
-/*
-	double lastResult = -1;
-	int card, symbol;
-	
-	for (int i = 0; i < allCards.size(); ++i) {
-		vector<double> v1 = compareIMG(symbols[0].first, allCards[i]);
-		vector<double> v2 = compareIMG(symbols[1].first, allCards[i]);
 
-		double result = (v1[0] * v1[2]) / (v1[1] * v1[3]);
-		if (result > lastResult) {
-			lastResult = result;
-			card = i;
-			symbol = 0;
+	
+	for (int index = 0; index < symbols.size(); ++index) {
+		double lastResult = -1;
+		int card;
+		for (int i = 0; i < allCards.size(); ++i) {
+			vector<double> v1 = compareIMG(symbols[index].first, allCards[i]);
+
+			double result = (v1[0] * v1[2]) / (v1[1] * v1[3]);
+			if (result > lastResult) {
+				lastResult = result;
+				card = i;
+			}
 		}
-		result = (v2[0] * v2[2]) / (v2[1] * v2[3]);
-		if (result > lastResult) {
-			lastResult = result;
-			card = i;
-			symbol = 1;
-		}
+		cout << lastResult << " " << card << endl;
+		namedWindow("Display window1" + to_string(index), WINDOW_AUTOSIZE);// Create a window for display.
+		imshow("Display window1" + to_string(index), symbols[index].first);
+		namedWindow("Display window2" + to_string(index), WINDOW_AUTOSIZE);// Create a window for display.
+		imshow("Display window2" + to_string(index), allCards[card]);
+
 	}
 
-
-	cout << lastResult << " " << card << " " << symbol << endl;
-	*/
-	double lastResult = -1;
-	int card;
-	for (int i = 0; i < allCards.size(); ++i) {
-		vector<double> v = compareIMG(cards[1], allCards[i]);
-		double result = (v[0] * v[2]) / (v[1] * v[3]);
-		if (result > lastResult) {
-			lastResult = result;
-			card = i;
-		}
-	}
-
-
-	namedWindow("Display window1", WINDOW_AUTOSIZE);// Create a window for display.
-	imshow("Display window1", cards[1]);
-	//namedWindow("Display window2", WINDOW_AUTOSIZE);// Create a window for display.
-	//imshow("Display window2", symbols[symbol].first);
-	namedWindow("Display window3", WINDOW_AUTOSIZE);// Create a window for display.
-	imshow("Display window3", allCards[card]);
 	
+	/*
+	for (int index = 0; index < 4; ++index) {
+		double lastResult = -1;
+		int card;
+		for (int i = 0; i < allCards.size(); ++i) {
+			vector<double> v = compareIMG(cards[index], allCards[i]);
+			double result = (v[0] * v[2]) / (v[1] * v[3]);
+			if (result > lastResult) {
+				lastResult = result;
+				card = i;
+			}
+		}
+		namedWindow("Display window" + to_string(index), WINDOW_AUTOSIZE);// Create a window for display.
+		imshow("Display window" + to_string(index), cards[index]);
+		namedWindow("Display window2", WINDOW_AUTOSIZE);// Create a window for display.
+		imshow("Display window2", symbols[symbol].first);
+		namedWindow("Display window2" + to_string(index), WINDOW_AUTOSIZE);// Create a window for display.
+		imshow("Display window2" + to_string(index), allCards[card]);
+		}
+		*/
+
+
+		
+
 	waitKey(0);                                          // Wait for a keystroke in the window
     return 0;
 }
