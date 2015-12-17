@@ -1,12 +1,20 @@
-#include <opencv2/core/core.hpp>
-#include "opencv2/imgproc/imgproc.hpp"
-#include <opencv2/highgui/highgui.hpp>
+#include "stdafx.h"
+
 #include <iostream>
+#include <opencv2/xfeatures2d.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/calib3d.hpp>
+#include <opencv2/core/core.hpp>
+
 //#include <Gdiplus.h>
 
 using namespace cv;
 using namespace std;
 
+void filterMatchesByAbsoluteValue(std::vector<DMatch> &matches, float maxDistance);
+Mat filterMatchesRANSAC(std::vector<DMatch> &matches, std::vector<KeyPoint> &keypointsA, std::vector<KeyPoint> &keypointsB);
+void showResult(Mat &imgA, std::vector<KeyPoint> &keypointsA, Mat &imgB, std::vector<KeyPoint> &keypointsB, std::vector<DMatch> &matches, Mat &homography);
 
 bool compareContourAreas(std::vector<Point> contour1, std::vector<Point> contour2) {
 	double i = fabs(contourArea(Mat(contour1)));
@@ -59,6 +67,114 @@ double compareIMG(Mat img1, Mat img2) {
 		vec.push_back(compareHist(hist1, hist2, compare_method));
 	}
 	return (vec[0] * vec[2]) / (vec[1] * vec[3]);
+}
+
+vector<int> compareSIFT(Mat img1, vector<Mat> img2) {
+	//-- Step 1: Detect the keypoints using SURF Detector
+	int minHessian = 400;
+
+	Ptr<FeatureDetector> detector = xfeatures2d::SIFT::create();
+	Ptr<DescriptorExtractor> extractor = xfeatures2d::SIFT::create();
+	FlannBasedMatcher* matcher = new FlannBasedMatcher();
+
+	Mat descriptor, homography;
+	vector<Mat>  descriptors(img2.size());
+
+	std::vector<KeyPoint> keypoints_1;
+	vector<vector<KeyPoint>>keypoints = vector<vector<KeyPoint>>();
+
+	detector->detect(img1, keypoints_1);
+	extractor->compute(img1, keypoints_1, descriptor);
+
+	vector<int> allMatches;
+	for (int i = 0; i < img2.size();i++)
+	{
+		vector<DMatch> matches = vector<DMatch>();
+
+		vector<KeyPoint> keypoint;
+		detector->detect(img2[i], keypoint);
+		extractor->compute(img2[i], keypoint, descriptors[i]);
+		keypoints.push_back(keypoint);
+
+		matcher->match(descriptor, descriptors[i], matches);
+
+		filterMatchesByAbsoluteValue(matches, 120);
+
+		cout << matches.size() << endl;
+		allMatches.push_back(matches.size());
+	}
+
+	return allMatches;
+}
+
+void filterMatchesByAbsoluteValue(std::vector<DMatch> &matches, float maxDistance)
+{
+	std::vector<DMatch> filteredMatches;
+	for (size_t i = 0; i < matches.size(); i++)
+	{
+		if (matches[i].distance < maxDistance)
+			filteredMatches.push_back(matches[i]);
+	}
+	matches = filteredMatches;
+}	
+
+Mat filterMatchesRANSAC(std::vector<DMatch> &matches, std::vector<KeyPoint> &keypointsA, std::vector<KeyPoint> &keypointsB)
+{
+	Mat homography;
+	std::vector<DMatch> filteredMatches;
+	if (matches.size() >= 4)
+	{
+		vector<Point2f> srcPoints = vector<Point2f>();
+		vector<Point2f> dstPoints;
+		for (size_t i = 0; i < matches.size(); i++)
+		{
+
+			srcPoints.push_back(keypointsA[matches[i].queryIdx].pt);
+			dstPoints.push_back(keypointsB[matches[i].trainIdx].pt);
+		}
+
+		Mat mask;
+		homography = findHomography(srcPoints, dstPoints, CV_RANSAC, 1.0, mask);
+
+		for (int i = 0; i < mask.rows; i++)
+		{
+			if (mask.ptr<uchar>(i)[0] == 1)
+				filteredMatches.push_back(matches[i]);
+		}
+	}
+	//matches = filteredMatches;
+	return homography;
+}
+
+void showResult(Mat &imgA, std::vector<KeyPoint> &keypointsA, Mat &imgB, std::vector<KeyPoint> &keypointsB, std::vector<DMatch> &matches, Mat &homography)
+{
+	// Draw matches
+	Mat imgMatch;
+	drawMatches(imgA, keypointsA, imgB, keypointsB, matches, imgMatch, Scalar::all(-1), Scalar::all(-1),
+		vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+
+	if (!homography.empty())
+	{
+		//-- Get the corners from the image_1 ( the object to be "detected" )
+		std::vector<Point2f> obj_corners(4);
+		obj_corners[0] = cvPoint(0, 0); obj_corners[1] = cvPoint(imgA.cols, 0);
+		obj_corners[2] = cvPoint(imgA.cols, imgA.rows); obj_corners[3] = cvPoint(0, imgA.rows);
+		std::vector<Point2f> scene_corners(4);
+
+		perspectiveTransform(obj_corners, scene_corners, homography);
+
+		float cols = (float)imgA.cols;
+		line(imgMatch, scene_corners[0] + Point2f(cols, 0), scene_corners[1] + Point2f(cols, 0), Scalar(0, 255, 0), 4);
+		line(imgMatch, scene_corners[1] + Point2f(cols, 0), scene_corners[2] + Point2f(cols, 0), Scalar(0, 255, 0), 4);
+		line(imgMatch, scene_corners[2] + Point2f(cols, 0), scene_corners[3] + Point2f(cols, 0), Scalar(0, 255, 0), 4);
+		line(imgMatch, scene_corners[3] + Point2f(cols, 0), scene_corners[0] + Point2f(cols, 0), Scalar(0, 255, 0), 10);
+	}
+
+
+
+	namedWindow("matches", CV_WINDOW_KEEPRATIO);
+	imshow("matches", imgMatch);
+	waitKey(0);
 }
 vector<Mat> readCards() {
 	string const suit[4] = { "copas","espadas","ouros","paus" };
@@ -144,7 +260,7 @@ int main( int argc, char** argv )
     }*/
 
     Mat image;
-    image = imread("C:\\Users\\Asus\\Documents\\VRAU2015\\RVAU Segundo\\x64\\Release\\teste.png", CV_LOAD_IMAGE_COLOR);   // Read the file
+    image = imread("C:\\Users\\Asus\\Documents\\VRAU2015\\RVAU Segundo\\x64\\Release\\TestImages\\TestImage1.png", CV_LOAD_IMAGE_COLOR);   // Read the file
 
     if(! image.data )                              // Check for invalid input
     {
@@ -251,9 +367,8 @@ int main( int argc, char** argv )
 	*/
 	//---------------------------------------------------------------------------------//
 
-	vector<Mat> allCards = readAllNewCards(); //getDataSet
-	vector<Mat> aux = readAllCards();
-	allCards.insert(allCards.end(),aux.begin(), aux.end());
+	vector<Mat> allCards = readAllNewCards(); //getDataSet	
+
 	//Compare symbols with Dataset
 
 	/*
@@ -288,25 +403,34 @@ int main( int argc, char** argv )
 	*/
 
 	
+	compareSIFT(cards[0], allCards);
+
 	for (int index = 0; index < 4; ++index) {
-		double lastResult = -1;
-		int card;
-		for (int i = 0; i < allCards.size(); ++i) {
-			double result = compareIMG(cards[index], allCards[i]);
-			if (result > lastResult) {
-				lastResult = result;
-				card = i;
+
+		vector<int> matches = compareSIFT(cards[index], allCards);
+
+		int maxMatch = -1;
+		vector<int> BestJ;
+		for (int j = 0; j < matches.size(); ++j) {
+			if (matches[j] > maxMatch) {
+				maxMatch = matches[j];
+				BestJ.clear();
+				BestJ.push_back(j);
+			}
+			else if (matches[j] == maxMatch) {
+				maxMatch = matches[j];
+				BestJ.push_back(j);
 			}
 		}
-		namedWindow("Display window1" + to_string(index), WINDOW_AUTOSIZE);// Create a window for display.
-		imshow("Display window1" + to_string(index), cards[index]);
-		namedWindow("Display window2" + to_string(index), WINDOW_AUTOSIZE);// Create a window for display.
-		imshow("Display window2" + to_string(index), allCards[card]);
+		for (int j = 0; j < BestJ.size(); ++j) {
+			namedWindow("Display window1" + to_string(index), WINDOW_AUTOSIZE);// Create a window for display.
+			imshow("Display window1" + to_string(index), cards[index]);
+
+
+			namedWindow("Display window2" + to_string(index) + to_string(j), WINDOW_AUTOSIZE);// Create a window for display.
+			imshow("Display window2" + to_string(index) + to_string(j), allCards[BestJ[j]]);
 		}
-		
-
-
-		
+	}
 
 	waitKey(0);                                          // Wait for a keystroke in the window
     return 0;
