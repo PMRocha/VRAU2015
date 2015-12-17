@@ -29,7 +29,7 @@ Mat preprocess(Mat img) {
 
 	return img;
 }
-vector<double> compareIMG(Mat img1, Mat img2) {
+double compareIMG(Mat img1, Mat img2) {
 	Mat hsv1, hsv2;
 
 	cvtColor(img1, hsv1, CV_BGR2HSV);
@@ -43,7 +43,7 @@ vector<double> compareIMG(Mat img1, Mat img2) {
 
 	const float* ranges[] = { h_ranges, s_ranges };
 
-	int channels[] = { 0, 1 };
+	int channels[] = { 0, 1, 2 };
 
 	MatND hist1, hist2;
 
@@ -58,11 +58,21 @@ vector<double> compareIMG(Mat img1, Mat img2) {
 		int compare_method = i;
 		vec.push_back(compareHist(hist1, hist2, compare_method));
 	}
-	return vec;
+	return (vec[0] * vec[2]) / (vec[1] * vec[3]);
 }
 vector<Mat> readCards() {
 	string const suit[4] = { "copas","espadas","ouros","paus" };
+	string const num[13] = { "2","3","4","5","6","7","8","9","10","J","Q","K","A" };
 	vector<Mat> vec;
+
+	for (int i = 0; i < 13; i++) {
+		string str = "C:\\Users\\Asus\\Documents\\VRAU2015\\RVAU Segundo\\x64\\Release\\cards\\naipes\\"
+			+ num[i] + ".png";
+		Mat image = imread(str, CV_LOAD_IMAGE_COLOR);
+
+		vec.push_back(image);
+	}
+
 	for (int i = 0; i < 4; i++) {
 			string str = "C:\\Users\\Asus\\Documents\\VRAU2015\\RVAU Segundo\\x64\\Release\\cards\\naipes\\"
 				+ suit[i] + ".png";
@@ -88,7 +98,42 @@ vector<Mat> readAllCards() {
 
 	return vec;
 }
+vector<Mat> readAllNewCards() {
+	string const suit[4] = { "hearts","spades","diamonds","clubs" };
+	string const num[13] = { "2","3","4","5","6","7","8","9","10","jack","queen","king","ace" };
+	string path = "C:\\Users\\Asus\\Documents\\VRAU2015\\RVAU Segundo\\x64\\Release\\PNG-cards-1.3\\";
+	vector<Mat> vec;
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 9; ++j) {
+			string str = path + num[j] + "_of_" + suit[i] + ".png";
+			Mat image = imread(str, CV_LOAD_IMAGE_COLOR);
 
+			vec.push_back(image);
+		}
+		for (int j = 9; j < 12; ++j) {
+			string str = path + num[j] + "_of_" + suit[i] + ".png";
+			Mat image = imread(str, CV_LOAD_IMAGE_COLOR);
+
+			vec.push_back(image);
+
+			str = path + num[j] + "_of_" + suit[i] + "2.png";
+			image = imread(str, CV_LOAD_IMAGE_COLOR);
+
+			vec.push_back(image);
+		}
+
+		string str = path + num[12] + "_of_" + suit[i] + ".png";
+		Mat image = imread(str, CV_LOAD_IMAGE_COLOR);
+
+		vec.push_back(image);
+	}
+	string str = path + "ace_of_spades2.png";
+	Mat image = imread(str, CV_LOAD_IMAGE_COLOR);
+
+	vec.push_back(image);
+
+	return vec;
+}
 
 int main( int argc, char** argv )
 {
@@ -99,7 +144,7 @@ int main( int argc, char** argv )
     }*/
 
     Mat image;
-    image = imread("C:\\Users\\Asus\\Documents\\VRAU2015\\RVAU Segundo\\x64\\Release\\cards.png", CV_LOAD_IMAGE_COLOR);   // Read the file
+    image = imread("C:\\Users\\Asus\\Documents\\VRAU2015\\RVAU Segundo\\x64\\Release\\teste.png", CV_LOAD_IMAGE_COLOR);   // Read the file
 
     if(! image.data )                              // Check for invalid input
     {
@@ -158,23 +203,23 @@ int main( int argc, char** argv )
 	//-----------------------------------------------------------------//
 
 	//-------------------------------Get Symbols----------------------------------//
-	vector<pair<Mat, int>> symbols;
-
+	/*
+	vector<pair<Mat, Mat>> allSymbols;
 	for (int index = 0; index < 4 ; ++index) {
+		vector<pair<Mat, int>> symbols;
 		thresh = preprocess(cards[index]);
 		findContours(thresh, vecPoint, vecInfo, CV_RETR_TREE, CHAIN_APPROX_SIMPLE);
 		std::sort(vecPoint.begin(), vecPoint.end(), compareContourAreas);
 		
-		cout << vecPoint.size() << endl;
 		for (int i = 0; i < 15 && i < vecPoint.size(); ++i) {
 			vector<Point> symbol = vecPoint[i];
 			double peri = arcLength(symbol, true);
 			approxPolyDP(symbol, approximate, 0.01*peri, true);
 			RotatedRect rect = minAreaRect(symbol);
-			rectangle(cards[index], rect.boundingRect(), Scalar(0, 0, 255));
+			//rectangle(cards[index], rect.boundingRect(), Scalar(0, 0, 255));
 
-			cout << cards[index].size() << endl;
-			cout << rect.boundingRect() << endl;
+			//cout << cards[index].size() << endl;
+			//cout << rect.boundingRect() << endl;
 			Mat cropped;
 			if (rect.boundingRect().x + rect.boundingRect().width < cards[index].size().width &&
 				rect.boundingRect().y + rect.boundingRect().height < cards[index].size().height &&
@@ -199,58 +244,66 @@ int main( int argc, char** argv )
 			}
 			symbols.push_back(pair<Mat, int>(cropped, rect.center.x));
 		}
-		
+		std::sort(symbols.begin(), symbols.end(), sortByX);
+		allSymbols.push_back(pair<Mat, Mat>(symbols[0].first,symbols[1].first));
 	}
 
-	std::sort(symbols.begin(), symbols.end(), sortByX);
+	*/
 	//---------------------------------------------------------------------------------//
 
-	vector<Mat> allCards = readCards(); //getDataSet
-
+	vector<Mat> allCards = readAllNewCards(); //getDataSet
+	vector<Mat> aux = readAllCards();
+	allCards.insert(allCards.end(),aux.begin(), aux.end());
 	//Compare symbols with Dataset
 
-	
-	for (int index = 0; index < symbols.size(); ++index) {
-		double lastResult = -1;
-		int card;
-		for (int i = 0; i < allCards.size(); ++i) {
-			vector<double> v1 = compareIMG(symbols[index].first, allCards[i]);
-
-			double result = (v1[0] * v1[2]) / (v1[1] * v1[3]);
-			if (result > lastResult) {
-				lastResult = result;
-				card = i;
-			}
-		}
-		cout << lastResult << " " << card << endl;
-		namedWindow("Display window1" + to_string(index), WINDOW_AUTOSIZE);// Create a window for display.
-		imshow("Display window1" + to_string(index), symbols[index].first);
-		namedWindow("Display window2" + to_string(index), WINDOW_AUTOSIZE);// Create a window for display.
-		imshow("Display window2" + to_string(index), allCards[card]);
-
-	}
-
-	
 	/*
+	for (int index = 0; index < allSymbols.size(); ++index) {
+		double lastResult1 = -1, lastResult2 = -1;
+		int card1, card2;
+		for (int i = 0; i < allCards.size(); ++i) {
+
+			double result = compareIMG(allSymbols[index].first, allCards[i]);
+			if (result > lastResult1) {
+				lastResult1 = result;
+				card1 = i;
+			}
+			result = compareIMG(allSymbols[index].second, allCards[i]);
+			if (result > lastResult2) {
+				lastResult2 = result;
+				card2 = i;
+			}
+
+		}
+
+		namedWindow("Display window1" + to_string(index), WINDOW_AUTOSIZE);// Create a window for display.
+		imshow("Display window1" + to_string(index), allSymbols[index].first);
+		namedWindow("Display window2" + to_string(index), WINDOW_AUTOSIZE);// Create a window for display.
+		imshow("Display window2" + to_string(index), allSymbols[index].second);
+
+
+		string const num[17] = { "2","3","4","5","6","7","8","9","10","J","Q","K","A","copas","espadas","ouros","paus" };
+
+		cout << "card: " << num[card1] << " " << num[card2] << endl;
+	}
+	*/
+
+	
 	for (int index = 0; index < 4; ++index) {
 		double lastResult = -1;
 		int card;
 		for (int i = 0; i < allCards.size(); ++i) {
-			vector<double> v = compareIMG(cards[index], allCards[i]);
-			double result = (v[0] * v[2]) / (v[1] * v[3]);
+			double result = compareIMG(cards[index], allCards[i]);
 			if (result > lastResult) {
 				lastResult = result;
 				card = i;
 			}
 		}
-		namedWindow("Display window" + to_string(index), WINDOW_AUTOSIZE);// Create a window for display.
-		imshow("Display window" + to_string(index), cards[index]);
-		namedWindow("Display window2", WINDOW_AUTOSIZE);// Create a window for display.
-		imshow("Display window2", symbols[symbol].first);
+		namedWindow("Display window1" + to_string(index), WINDOW_AUTOSIZE);// Create a window for display.
+		imshow("Display window1" + to_string(index), cards[index]);
 		namedWindow("Display window2" + to_string(index), WINDOW_AUTOSIZE);// Create a window for display.
 		imshow("Display window2" + to_string(index), allCards[card]);
 		}
-		*/
+		
 
 
 		
