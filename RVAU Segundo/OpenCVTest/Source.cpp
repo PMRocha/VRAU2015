@@ -17,6 +17,7 @@ Mat filterMatchesRANSAC(std::vector<DMatch> &matches, std::vector<KeyPoint> &key
 void showResult(string name, Mat &imgA, std::vector<KeyPoint> &keypointsA, Mat &imgB, std::vector<KeyPoint> &keypointsB, std::vector<DMatch> &matches, Mat &homography);
 
 vector<int> cardNames;
+vector<string> suitNames;
 
 
 bool compareContourAreas(std::vector<Point> contour1, std::vector<Point> contour2) {
@@ -202,6 +203,8 @@ vector<Mat> readAllCards() {
 			Mat image = imread(str, CV_LOAD_IMAGE_COLOR);
 
 			vec.push_back(image);
+			cardNames.push_back(j);
+			suitNames.push_back(suit[i]);
 		}
 	}
 
@@ -220,6 +223,7 @@ vector<Mat> readAllNewCards() {
 
 			vec.push_back(image);
 			cardNames.push_back(j);
+			suitNames.push_back(suit[i]);
 		}
 	}
 	return vec;
@@ -302,7 +306,7 @@ int main( int argc, char** argv )
 	}
 
 	for (int i = 0; i < indexes.size(); ++i) {
-		cout << "VALOR: " << cardNames[indexes[i]] << endl;
+		cout << "VALOR: " << cardNames[indexes[i]] << " SUIT: " << suitNames[indexes[i]] << endl;
 	}
 
 	waitKey(0);                                          // Wait for a keystroke in the window
