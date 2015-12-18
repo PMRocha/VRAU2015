@@ -71,9 +71,30 @@ double compareIMG(Mat img1, Mat img2) {
 	}
 	return (vec[0] * vec[2]);
 }
+bool sortCards(pair<int, string> p1, pair<int, string> p2) {
+	return p1.first > p2.first;
+}
+pair<int, string> mySort(vector<pair<int, string>> vec, string strong, string trump) {
+	vector<pair<int, string>> newVec;
+	for (int i = 0; i < vec.size(); ++i) {
+		if (vec[i].second == trump)
+			newVec.push_back(vec[i]);
+	}
+	if (!newVec.empty()) {
+		sort(newVec.begin(), newVec.end(), sortCards);
+		return newVec[0];
+	}
+	for (int i = 0; i < vec.size(); ++i) {
+		if (vec[i].second == strong)
+			newVec.push_back(vec[i]);
+	}
+
+	sort(newVec.begin(), newVec.end(), sortCards);
+	return newVec[0];
+}
 
 int compareSIFT(Mat img1, vector<Mat> img2) {
-	//-- Step 1: Detect the keypoints using SURF Detector
+	cout << "Running SIFT" << endl;
 	int minHessian = 400;
 
 	Ptr<FeatureDetector> detector = xfeatures2d::SIFT::create();
@@ -105,8 +126,6 @@ int compareSIFT(Mat img1, vector<Mat> img2) {
 		matcher->match(descriptor, descriptors[i], matches);
 
 		filterMatchesByAbsoluteValue(matches, 125);
-
-		cout << matches.size() << endl;
 
 		double d = compareIMG(img1, img2[i]);
 		double points = 100 * matches.size() * d;
@@ -192,13 +211,15 @@ void showResult(string name, Mat &imgA, std::vector<KeyPoint> &keypointsA, Mat &
 	imshow(name, imgMatch);
 }
 
-vector<Mat> readAllCards() {
-	string const suit[4] = { "copas","espadas","ouros","paus" };
+vector<Mat> readAllNewCards() {
+	string const suit[4] = { "hearts","spades","diamonds","clubs" };
+	string const num[13] = { "2","3","4","5","6","7","8","9","10","jack","queen","king","ace" };
+	string path = "cards\\";
 	vector<Mat> vec;
 	for (int i = 0; i < 4; i++) {
-		for (int j = 1; j <= 13; ++j) {
-			string str = "C:\\Users\\Pedrp\\DocumentsGitHub\\\\VRAU2015\\RVAU Segundo\\x64\\Release\\cards\\"
-				+ to_string(j) + "_" + suit[i] + ".png";
+		for (int j = 0; j < 13; ++j) {
+			string str = path + num[j] + "_of_" + suit[i] + ".png";
+			
 			Mat image = imread(str, CV_LOAD_IMAGE_COLOR);
 
 			vec.push_back(image);
@@ -206,18 +227,10 @@ vector<Mat> readAllCards() {
 			suitNames.push_back(suit[i]);
 		}
 	}
-
-	return vec;
-}
-vector<Mat> readAllNewCards() {
-	string const suit[4] = { "hearts","spades","diamonds","clubs" };
-	string const num[13] = { "2","3","4","5","6","7","8","9","10","jack","queen","king","ace" };
-	string path = "C:\\Users\\Pedrp\\Documents\\GitHub\\VRAU2015\\RVAU Segundo\\x64\\Release\\PNG-cards-1.3\\";
-	vector<Mat> vec;
 	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 13; ++j) {
-			string str = path + num[j] + "_of_" + suit[i] + ".png";
-			
+		for (int j = 9; j < 12; ++j) {
+			string str = path + num[j] + "_of_" + suit[i] + "2.png";
+
 			Mat image = imread(str, CV_LOAD_IMAGE_COLOR);
 
 			vec.push_back(image);
@@ -240,12 +253,12 @@ Mat showFinal(Mat src1, Mat src2)
 	return finalImage;
 }
 
-Mat WriteOnImage(string message, Mat image, vector<Point2f> CardCoords) {
+Mat WriteOnImage(string message, Mat image, vector<Point2f> CardCoords, Scalar color) {
 	int temp;
 	vector<Point2f> left_image;
 
 	Mat textImg = Mat::zeros(image.cols, image.rows, image.type());
-	putText(textImg, message, Point(image.cols / 2 - getTextSize(message, FONT_HERSHEY_SIMPLEX, 5.0, 20, &temp).width / 2, image.rows / 2), FONT_HERSHEY_SIMPLEX, 5.0, Scalar(210, 66, 38), 20);
+	putText(textImg, message, Point(image.cols / 2 - getTextSize(message, FONT_HERSHEY_SIMPLEX, 5.0, 20, &temp).width / 2, image.rows / 2), FONT_HERSHEY_SIMPLEX, 5.0, color, 20);
 
 	left_image.push_back(Point2f(float(0), float(0)));
 	left_image.push_back(Point2f(float(0), float(textImg.rows)));
@@ -264,16 +277,22 @@ int main( int argc, char** argv )
 {
 	
 	vector<vector<Point2f> > CardsCoords;
+	vector<Mat> allCards = readAllNewCards(); //getDataSet	
 
     Mat image;
-    image = imread("C:\\Users\\Pedrp\\Documents\\GitHub\\VRAU2015\\RVAU Segundo\\x64\\Release\\TestImages\\TestImage5.png", CV_LOAD_IMAGE_COLOR);   // Read the file
+    image = imread("C:\\Users\\Asus\\Documents\\VRAU2015\\RVAU Segundo\\x64\\Release\\TestImages\\TestImage5.png", CV_LOAD_IMAGE_COLOR);   // Read the file
 
     if(! image.data )                              // Check for invalid input
     {
         cout <<  "Could not open or find the image" << std::endl ;
         return -1;
     }
-	
+
+	namedWindow("Original", CV_WINDOW_KEEPRATIO);
+	imshow("Original", image);
+	string trump;
+	cout << "Select the Trump: hearts, spades, diamonds, clubs" << endl;
+	cin >> trump;
 	//--------------------------------------------Get Cards-------------------------------------------//
 	Mat thresh = preprocess(image);
 
@@ -285,6 +304,7 @@ int main( int argc, char** argv )
 
 	std::sort(vecPoint.begin(), vecPoint.end(), compareContourAreas);
 	
+
 	vector<Point> r;
 	vector<Vec2f> approximate;
 	Point2f inputQuad[4];
@@ -332,26 +352,50 @@ int main( int argc, char** argv )
 		CardsCoords.push_back(temp);
 	}
 	//-----------------------------------------------------------------//
-
-	vector<Mat> allCards = readAllNewCards(); //getDataSet	
-
-	for (int i = 0; i < 4;i++)
-	{
-		image = WriteOnImage("winner", image, CardsCoords[i]);
-	}
 	
+	vector<pair<int, string>> cardsTable;
+	for (int index = 0; index < 4; ++index) {
+		int i = compareSIFT(cards[index], allCards);
+		cardsTable.push_back(pair<int, string>(cardNames[i], suitNames[i]));
+	}
+
+	string strong = cardsTable[0].second;
+
+	
+	
+	cout << "Trump: " << trump << endl;
+
+	pair<int, string> winner = mySort(cardsTable, strong, trump);
+
+	for (int i = 0; i < 4;i++) {
+			switch (cardsTable[i].first) {
+			case 9:
+				cout << "Card " << i << ": Jack of " << cardsTable[i].second << endl;
+				break;
+			case 10:
+				cout << "Card " << i << ": Queen of " << cardsTable[i].second << endl;
+				break;
+			case 11:
+				cout << "Card " << i << ": King of " << cardsTable[i].second << endl;
+				break;
+			case 12:
+				cout << "Card " << i << ": Ace of " << cardsTable[i].second << endl;
+				break;
+			default:
+				cout << "Card " << i << ": " << cardsTable[i].first + 2 << " of " << cardsTable[i].second << endl;
+				break;
+			}
+		if (cardsTable[i] == winner) {
+			image = WriteOnImage("Winner", image, CardsCoords[i], Scalar(66, 210, 38));
+			drawContours(image, vecPoint, i, Scalar(66, 210, 38), 2, 8, vecInfo, 0, Point());
+		}
+		else {
+			image = WriteOnImage("Loser", image, CardsCoords[i], Scalar(210, 66, 38));
+			drawContours(image, vecPoint, i, Scalar(210, 66, 38), 2, 8, vecInfo, 0, Point());
+		}
+	}
 	namedWindow("Final", CV_WINDOW_KEEPRATIO);
 	imshow("Final", image);
-
-	compareSIFT(cards[0], allCards);
-	vector<int> indexes;
-	for (int index = 0; index < 4; ++index) {
-		indexes.push_back(compareSIFT(cards[index], allCards));
-	}
-
-	for (int i = 0; i < indexes.size(); ++i) {
-		cout << "VALOR: " << cardNames[indexes[i]] << " SUIT: " << suitNames[indexes[i]] << endl;
-	}
 
 	waitKey(0);                                          // Wait for a keystroke in the window
     return 0;
