@@ -18,7 +18,6 @@ void showResult(string name, Mat &imgA, std::vector<KeyPoint> &keypointsA, Mat &
 
 vector<int> cardNames;
 
-
 bool compareContourAreas(std::vector<Point> contour1, std::vector<Point> contour2) {
 	double i = fabs(contourArea(Mat(contour1)));
 	double j = fabs(contourArea(Mat(contour2)));
@@ -197,7 +196,7 @@ vector<Mat> readAllCards() {
 	vector<Mat> vec;
 	for (int i = 0; i < 4; i++) {
 		for (int j = 1; j <= 13; ++j) {
-			string str = "C:\\Users\\Asus\\Documents\\VRAU2015\\RVAU Segundo\\x64\\Release\\cards\\"
+			string str = "C:\\Users\\Pedrp\\DocumentsGitHub\\\\VRAU2015\\RVAU Segundo\\x64\\Release\\cards\\"
 				+ to_string(j) + "_" + suit[i] + ".png";
 			Mat image = imread(str, CV_LOAD_IMAGE_COLOR);
 
@@ -210,7 +209,7 @@ vector<Mat> readAllCards() {
 vector<Mat> readAllNewCards() {
 	string const suit[4] = { "hearts","spades","diamonds","clubs" };
 	string const num[13] = { "2","3","4","5","6","7","8","9","10","jack","queen","king","ace" };
-	string path = "C:\\Users\\Asus\\Documents\\VRAU2015\\RVAU Segundo\\x64\\Release\\PNG-cards-1.3\\";
+	string path = "C:\\Users\\Pedrp\\Documents\\GitHub\\VRAU2015\\RVAU Segundo\\x64\\Release\\PNG-cards-1.3\\";
 	vector<Mat> vec;
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 13; ++j) {
@@ -225,16 +224,45 @@ vector<Mat> readAllNewCards() {
 	return vec;
 }
 
+Mat showFinal(Mat src1, Mat src2)
+{
+	Mat gray, gray_inv, src1final, src2final;
+	cvtColor(src2, gray, CV_BGR2GRAY);
+	threshold(gray, gray, 0, 255, CV_THRESH_BINARY);
+	bitwise_not(gray, gray_inv);
+	src1.copyTo(src1final, gray_inv);
+	src2.copyTo(src2final, gray);
+	Mat finalImage = src1final + src2final;
+	return finalImage;
+}
+
+Mat WriteOnImage(string message, Mat image, vector<Point2f> CardCoords) {
+	int temp;
+	vector<Point2f> left_image;
+
+	Mat textImg = Mat::zeros(image.cols, image.rows, image.type());
+	putText(textImg, message, Point(image.cols / 2 - getTextSize(message, FONT_HERSHEY_SIMPLEX, 5.0, 20, &temp).width / 2, image.rows / 2), FONT_HERSHEY_SIMPLEX, 5.0, Scalar(210, 66, 38), 20);
+
+	left_image.push_back(Point2f(float(0), float(0)));
+	left_image.push_back(Point2f(float(0), float(textImg.rows)));
+	left_image.push_back(Point2f(float(textImg.cols), float(textImg.rows)));
+	left_image.push_back(Point2f(float(textImg.cols), float(0)));
+
+	Mat H = findHomography(left_image, CardCoords, 0);
+	Mat logoWarped;
+	// Warp the logo image to change its perspective
+	warpPerspective(textImg, logoWarped, H, textImg.size());
+	return showFinal(image, logoWarped);
+
+}
+
 int main( int argc, char** argv )
 {
-    /*if( argc != 2)
-    {
-     cout <<" Usage: display_image ImageToLoadAndDisplay" << endl;
-     return -1;
-    }*/
+	
+	vector<vector<Point2f> > CardsCoords;
 
     Mat image;
-    image = imread("C:\\Users\\Asus\\Documents\\VRAU2015\\RVAU Segundo\\x64\\Release\\TestImages\\TestImage5.png", CV_LOAD_IMAGE_COLOR);   // Read the file
+    image = imread("C:\\Users\\Pedrp\\Documents\\GitHub\\VRAU2015\\RVAU Segundo\\x64\\Release\\TestImages\\TestImage5.png", CV_LOAD_IMAGE_COLOR);   // Read the file
 
     if(! image.data )                              // Check for invalid input
     {
@@ -263,11 +291,18 @@ int main( int argc, char** argv )
 	for (size_t i = 0; i < 4; i++)
 	{
 		vector<Point> card = vecPoint[i];
+		vector<Point2f> temp;
+
 		double peri = arcLength(card, true);
 		approxPolyDP(card, approximate, 0.01*peri, true);
 		RotatedRect rect = minAreaRect(card);
 		Point2f points[4];
 		rect.points(points);
+
+		temp.push_back(approximate[0]);
+		temp.push_back(approximate[1]);
+		temp.push_back(approximate[2]);
+		temp.push_back(approximate[3]);
 
 		if (dist(approximate[0], approximate[1]) < dist(approximate[1], approximate[2])) {
 			inputQuad[0] = approximate[0];
@@ -288,13 +323,22 @@ int main( int argc, char** argv )
 
 		Mat final = getPerspectiveTransform(inputQuad, outputQuad);
 		Mat output;
-		warpPerspective(image, cards[i], final, Size(450, 450));	
+		warpPerspective(image, cards[i], final, Size(450, 450));
+
+		CardsCoords.push_back(temp);
 	}
 	//-----------------------------------------------------------------//
 
 	vector<Mat> allCards = readAllNewCards(); //getDataSet	
 
+	for (int i = 0; i < 4;i++)
+	{
+		image = WriteOnImage("winner", image, CardsCoords[i]);
+	}
 	
+	namedWindow("Final", CV_WINDOW_KEEPRATIO);
+	imshow("Final", image);
+
 	compareSIFT(cards[0], allCards);
 	vector<int> indexes;
 	for (int index = 0; index < 4; ++index) {
